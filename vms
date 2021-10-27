@@ -9,7 +9,7 @@ import sys
 from xml.etree import ElementTree
 
 
-SOURCE_ATTRIBUTES = {'file', 'dir', 'name', 'dev', 'volume'}
+SOURCE_ATTRIBUTES = {"file", "dir", "name", "dev", "volume"}
 STATES = {
     libvirt.VIR_DOMAIN_RUNNING: "running",
     libvirt.VIR_DOMAIN_SHUTDOWN: "shutting down",
@@ -31,26 +31,27 @@ def cli(ctx):
 
 @cli.command(help="list virtual machines (default command)")
 @click.argument("patterns", nargs=-1)
-@click.option("--format", "format", type=click.Choice(["json", "table"]), default="table")
+@click.option(
+    "--format", "format", type=click.Choice(["json", "table"]), default="table"
+)
 def list(format, patterns):
     with connect_libvirt() as cnx:
         domains = [
-            {'name': dom.name(), 'state': STATES[dom.state()[0]]}
-            for dom
-            in cnx.listAllDomains()
+            {"name": dom.name(), "state": STATES[dom.state()[0]]}
+            for dom in cnx.listAllDomains()
             if any([re.search(p, dom.name()) for p in patterns]) or not patterns
         ]
         if format == "json":
             json.dumps(domains)
         else:
-            name_size = max([len(dom['name']) for dom in domains])
-            state_size = max([len(dom['state']) for dom in domains])
+            name_size = max([len(dom["name"]) for dom in domains])
+            state_size = max([len(dom["state"]) for dom in domains])
             format_str = "{:<" + str(name_size) + "}    {:<" + str(state_size) + "}"
             print(format_str.format("Name", "State"))
             print("-" * (name_size + state_size + 4))
-            
-            for dom in sorted(domains, key=lambda d: d['name']):
-                print(format_str.format(dom['name'], dom['state']))
+
+            for dom in sorted(domains, key=lambda d: d["name"]):
+                print(format_str.format(dom["name"], dom["state"]))
 
 
 @cli.command(help="start all vms matching a pattern")
@@ -62,9 +63,9 @@ def start(patterns):
     with connect_libvirt() as cnx:
         domains = [
             dom
-            for dom
-            in cnx.listAllDomains()
-            if dom.state()[0] != libvirt.VIR_DOMAIN_RUNNING and any([re.search(p, dom.name()) for p in patterns])
+            for dom in cnx.listAllDomains()
+            if dom.state()[0] != libvirt.VIR_DOMAIN_RUNNING
+            and any([re.search(p, dom.name()) for p in patterns])
         ]
         for dom in domains:
             try:
@@ -83,16 +84,19 @@ def stop(patterns):
     with connect_libvirt() as cnx:
         domains = [
             dom
-            for dom
-            in cnx.listAllDomains()
-            if dom.state()[0] == libvirt.VIR_DOMAIN_RUNNING and any([re.search(p, dom.name()) for p in patterns])
+            for dom in cnx.listAllDomains()
+            if dom.state()[0] == libvirt.VIR_DOMAIN_RUNNING
+            and any([re.search(p, dom.name()) for p in patterns])
         ]
         for dom in domains:
             try:
                 print("Stopping " + dom.name())
                 dom.shutdown()
             except libvirt.libvirtError as err:
-                print("Failed to shut down {}: {}".format(dom.name(), err), file=sys.stderr)
+                print(
+                    "Failed to shut down {}: {}".format(dom.name(), err),
+                    file=sys.stderr,
+                )
 
 
 @cli.command(help="delete all vms matching a pattern")
@@ -104,8 +108,7 @@ def delete(patterns):
     with connect_libvirt() as cnx:
         domains = [
             dom
-            for dom
-            in cnx.listAllDomains()
+            for dom in cnx.listAllDomains()
             if any([re.search(p, dom.name()) for p in patterns])
         ]
         for dom in domains:
@@ -119,7 +122,10 @@ def delete(patterns):
             for disk in xml_desc.findall("./devices/disk"):
                 target_node = disk.find("target")
                 if target_node is None:
-                    print("Missing target in disk definition of vm " + name, file=sys.stderr)
+                    print(
+                        "Missing target in disk definition of vm " + name,
+                        file=sys.stderr,
+                    )
                     continue
                 target = target_node.get("dev")
 
@@ -135,37 +141,64 @@ def delete(patterns):
                         try:
                             pool_obj = cnx.storagePoolLookupByName(pool)
                         except libvirt.libvirtError:
-                            print("Storage pool {} not found for disk {} of vm {}".format(pool, target, name), file=sys.stderr)
+                            print(
+                                "Storage pool {} not found for disk {} of vm {}".format(
+                                    pool, target, name
+                                ),
+                                file=sys.stderr,
+                            )
                             continue
 
                         try:
                             volume = pool_obj.storageVolLookupByName(source)
                         except libvirt.libvirtError:
-                            print("Storage volume {}/{} not found for disk {} of vm {}".format(pool, source, target, name), file=sys.stderr)
+                            print(
+                                "Storage volume {}/{} not found for disk {} of vm {}".format(
+                                    pool, source, target, name
+                                ),
+                                file=sys.stderr,
+                            )
                             continue
 
                     else:
                         try:
                             volume = cnx.storageVolLookupByPath(source)
                         except libvirt.libvirtError:
-                            print("Storage volume {} of vm {} not managed by libvirt, delete manually".format(source, name), file=sys.stderr)
+                            print(
+                                "Storage volume {} of vm {} not managed by libvirt, delete manually".format(
+                                    source, name
+                                ),
+                                file=sys.stderr,
+                            )
                             continue
 
                     if volume:
-                        volumes_to_delete.append({'volume': volume, 'target': target, 'source': source})
+                        volumes_to_delete.append(
+                            {"volume": volume, "target": target, "source": source}
+                        )
 
             try:
                 print("Deleting " + name)
-                dom.undefineFlags(libvirt.VIR_DOMAIN_UNDEFINE_MANAGED_SAVE | libvirt.VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA | libvirt.VIR_DOMAIN_UNDEFINE_CHECKPOINTS_METADATA | libvirt.VIR_DOMAIN_UNDEFINE_NVRAM)
+                dom.undefineFlags(
+                    libvirt.VIR_DOMAIN_UNDEFINE_MANAGED_SAVE
+                    | libvirt.VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA
+                    | libvirt.VIR_DOMAIN_UNDEFINE_CHECKPOINTS_METADATA
+                    | libvirt.VIR_DOMAIN_UNDEFINE_NVRAM
+                )
             except libvirt.libvirtError as err:
                 print("Failed to delete {}: {}".format(name, err), file=sys.stderr)
                 continue
 
             for volume in volumes_to_delete:
                 try:
-                    volume['volume'].delete()
+                    volume["volume"].delete()
                 except libvirt.libvirtError as err:
-                    print("Failed to delete volume {}({}): {}".format(volume['target'], volume['source'], err), file=sys.stderr)
+                    print(
+                        "Failed to delete volume {}({}): {}".format(
+                            volume["target"], volume["source"], err
+                        ),
+                        file=sys.stderr,
+                    )
 
 
 @cli.command(help="create a snapshot on all vms matching a pattern")
