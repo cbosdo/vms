@@ -61,18 +61,18 @@ def start(patterns):
     Start VMs which name matches any of the patterns
     """
     with connect_libvirt() as cnx:
-        domains = [
-            dom
-            for dom in cnx.listAllDomains()
-            if dom.state()[0] != libvirt.VIR_DOMAIN_RUNNING
-            and matches(dom.name(), patterns)
-        ]
-        for dom in domains:
-            try:
-                print("Starting " + dom.name())
-                dom.create()
-            except libvirt.libvirtError as err:
-                print("Failed to start {}: {}".format(dom.name(), err), file=sys.stderr)
+        for dom in cnx.listAllDomains():
+            if dom.state()[0] != libvirt.VIR_DOMAIN_RUNNING and matches(
+                dom.name(), patterns
+            ):
+                try:
+                    print("Starting " + dom.name())
+                    dom.create()
+                except libvirt.libvirtError as err:
+                    print(
+                        "Failed to start {}: {}".format(dom.name(), err),
+                        file=sys.stderr,
+                    )
 
 
 @cli.command(help="stop all vms matching a pattern")
@@ -82,21 +82,18 @@ def stop(patterns):
     Stop VMs which name matches any of the patterns
     """
     with connect_libvirt() as cnx:
-        domains = [
-            dom
-            for dom in cnx.listAllDomains()
-            if dom.state()[0] == libvirt.VIR_DOMAIN_RUNNING
-            and matches(dom.name(), patterns)
-        ]
-        for dom in domains:
-            try:
-                print("Stopping " + dom.name())
-                dom.shutdown()
-            except libvirt.libvirtError as err:
-                print(
-                    "Failed to shut down {}: {}".format(dom.name(), err),
-                    file=sys.stderr,
-                )
+        for dom in cnx.listAllDomains():
+            if dom.state()[0] == libvirt.VIR_DOMAIN_RUNNING and matches(
+                dom.name(), patterns
+            ):
+                try:
+                    print("Stopping " + dom.name())
+                    dom.shutdown()
+                except libvirt.libvirtError as err:
+                    print(
+                        "Failed to shut down {}: {}".format(dom.name(), err),
+                        file=sys.stderr,
+                    )
 
 
 @cli.command(help="delete all vms matching a pattern")
