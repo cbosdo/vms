@@ -32,13 +32,18 @@ def cli(ctx):
         ctx.invoke(list)
 
 
-@cli.command(help="list virtual machines (default command)")
+@cli.command()
 @click.argument("patterns", nargs=-1)
 @click.option(
     "--format", "format", type=click.Choice(["json", "table"]), default="table"
 )
 @click.pass_context
 def list(ctx, format, patterns):
+    """
+    list the virtual machines (default command)
+
+    PATTERNS: the list of patterns matching the VM name. If none is set matches all VMs.
+    """
     domains = [
         [dom.name(), STATES[dom.state()[0]]]
         for dom in ctx.obj.listAllDomains()
@@ -56,12 +61,14 @@ def list(ctx, format, patterns):
         )
 
 
-@cli.command(help="start all vms matching a pattern")
+@cli.command()
 @click.argument("patterns", nargs=-1)
 @click.pass_context
 def start(ctx, patterns):
     """
-    Start VMs which name matches any of the patterns
+    start all vms matching a pattern
+
+    PATTERNS: the list of patterns matching the VM name. If none is set matches all VMs.
     """
     for dom in ctx.obj.listAllDomains():
         if dom.state()[0] != libvirt.VIR_DOMAIN_RUNNING and matches(
@@ -77,12 +84,14 @@ def start(ctx, patterns):
                 )
 
 
-@cli.command(help="stop all vms matching a pattern")
+@cli.command(help="")
 @click.argument("patterns", nargs=-1)
 @click.pass_context
 def stop(ctx, patterns):
     """
-    Stop VMs which name matches any of the patterns
+    stop all vms matching a pattern
+
+    PATTERNS: the list of patterns matching the VM name. If none is set matches all VMs.
     """
     for dom in ctx.obj.listAllDomains():
         if dom.state()[0] == libvirt.VIR_DOMAIN_RUNNING and matches(
@@ -98,12 +107,14 @@ def stop(ctx, patterns):
                 )
 
 
-@cli.command(help="delete all vms matching a pattern")
+@cli.command()
 @click.argument("patterns", nargs=-1)
 @click.pass_context
 def delete(ctx, patterns):
     """
-    Delete VMs which name matches any of the patterns
+    delete all vms matching a pattern
+
+    PATTERNS: the list of patterns matching the VM name. If none is set matches all VMs.
     """
     domains = [dom for dom in ctx.obj.listAllDomains() if matches(dom.name(), patterns)]
     for dom in domains:
@@ -203,7 +214,7 @@ def snapshot(ctx):
         ctx.invoke(snapshot_list)
 
 
-@snapshot.command(name="list", help="list all snapshots of all vms matching a pattern")
+@snapshot.command(name="list")
 @click.argument("patterns", nargs=-1)
 @click.option(
     "--format", "format", type=click.Choice(["json", "table"]), default="table"
@@ -211,7 +222,9 @@ def snapshot(ctx):
 @click.pass_context
 def snapshot_list(ctx, format, patterns):
     """
-    List the snapshots on all VMs which name matches any of the patterns
+    list all snapshots of all vms matching a pattern
+
+    PATTERNS: the list of patterns matching the VM name. If none is set matches all VMs.
     """
     snapshots = []
     for dom in ctx.obj.listAllDomains():
@@ -257,13 +270,17 @@ def snapshot_list(ctx, format, patterns):
         )
 
 
-@snapshot.command(name="create", help="create a snapshot on all vms matching a pattern")
-@click.option("--name", "name", help="the name of the snapshot to create")
+@snapshot.command(name="create")
+@click.argument("name", nargs=1)
 @click.argument("patterns", nargs=-1)
 @click.pass_context
 def snapshot_create(ctx, name, patterns):
     """
-    Create a snapshot on VMs which name matches any of the patterns
+    create a snapshot on all vms matching a pattern
+
+    NAME: the name of the snapshot to create
+
+    PATTERNS: the list of patterns matching the VM name. If none is set matches all VMs.
     """
     name_node = "<name>{}</name>".format(name) if name else ""
     snapshotXml = "<domainsnapshot>{}</domainsnapshot>".format(name_node)
