@@ -20,6 +20,5 @@ _VMS_COMPLETE=fish_source vms > ~/.config/fish/completions/vms.fish
 # TODO
 
 * Add revert to snapshot
-* Add snapshot delete
 * Add connection URL parameter
 * Add completion for vm names
