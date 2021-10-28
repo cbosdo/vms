@@ -6,6 +6,7 @@ import json
 import libvirt
 import re
 import sys
+import tabulate
 from xml.etree import ElementTree
 
 
@@ -38,21 +39,20 @@ def cli(ctx):
 @click.pass_context
 def list(ctx, format, patterns):
     domains = [
-        {"name": dom.name(), "state": STATES[dom.state()[0]]}
+        [dom.name(), STATES[dom.state()[0]]]
         for dom in ctx.obj.listAllDomains()
         if matches(dom.name(), patterns)
     ]
     if format == "json":
-        json.dumps(domains)
+        print(json.dumps(domains))
     else:
-        name_size = max([len(dom["name"]) for dom in domains])
-        state_size = max([len(dom["state"]) for dom in domains])
-        format_str = "{:<" + str(name_size) + "}    {:<" + str(state_size) + "}"
-        print(format_str.format("Name", "State"))
-        print("-" * (name_size + state_size + 4))
-
-        for dom in sorted(domains, key=lambda d: d["name"]):
-            print(format_str.format(dom["name"], dom["state"]))
+        print(
+            tabulate.tabulate(
+                sorted(domains, key=lambda d: d[0]),
+                headers=["Name", "State"],
+                tablefmt="simple",
+            )
+        )
 
 
 @cli.command(help="start all vms matching a pattern")
