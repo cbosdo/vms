@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 from contextlib import contextmanager
+from datetime import datetime
 import click
 import json
 import libvirt
@@ -195,11 +196,72 @@ def delete(ctx, patterns):
                 )
 
 
-@cli.command(help="create a snapshot on all vms matching a pattern")
+@cli.group(help="Snapshots management", invoke_without_command=True)
+@click.pass_context
+def snapshot(ctx):
+    if ctx.invoked_subcommand is None:
+        ctx.invoke(snapshot_list)
+
+
+@snapshot.command(name="list", help="list all snapshots of all vms matching a pattern")
+@click.argument("patterns", nargs=-1)
+@click.option(
+    "--format", "format", type=click.Choice(["json", "table"]), default="table"
+)
+@click.pass_context
+def snapshot_list(ctx, format, patterns):
+    """
+    List the snapshots on all VMs which name matches any of the patterns
+    """
+    snapshots = []
+    for dom in ctx.obj.listAllDomains():
+        if not matches(dom.name(), patterns):
+            continue
+        for snap in dom.listAllSnapshots():
+            xml_desc = ElementTree.fromstring(snap.getXMLDesc())
+            desc_node = xml_desc.find("description")
+            created_node = xml_desc.find("creationTime")
+            created_time = (
+                datetime.fromtimestamp(int(created_node.text)).strftime("%c")
+                if created_node is not None
+                else ""
+            )
+            state_node = xml_desc.find("state")
+            snapshots.append(
+                [
+                    dom.name(),
+                    snap.getName(),
+                    bool(snap.isCurrent()),
+                    state_node.text if state_node is not None else "",
+                    created_time,
+                    desc_node.text if desc_node is not None else "",
+                ]
+            )
+
+    if format == "json":
+        print(json.dumps(snapshots))
+    else:
+        print(
+            tabulate.tabulate(
+                snapshots,
+                headers=[
+                    "Domain",
+                    "Name",
+                    "Current",
+                    "State",
+                    "Created",
+                    "Description",
+                ],
+                tablefmt="simple",
+            )
+        )
+
+
+@snapshot.command(name="create", help="create a snapshot on all vms matching a pattern")
 @click.option("--name", "name", help="the name of the snapshot to create")
 @click.argument("patterns", nargs=-1)
 @click.pass_context
-def snapshot(ctx, name, patterns):
+def snapshot_create(ctx, name, patterns):
     """
     Create a snapshot on VMs which name matches any of the patterns
     """
