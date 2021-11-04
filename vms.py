@@ -332,6 +332,32 @@ def snapshot_delete(ctx, name, patterns):
             print("Failed to delete snapshot on {}: {}".format(dom.name(), err))
 
 
+@snapshot.command(name="revert")
+@click.argument("name", nargs=1)
+@click.argument("patterns", nargs=-1, shell_complete=complete_domain_pattern)
+@click.pass_context
+def snapshot_revert(ctx, name, patterns):
+    """
+    revert to a snapshot on all vms matching a pattern
+
+    NAME: the name of the snapshot to revert to
+
+    PATTERNS: the list of patterns matching the VM name. If none is set matches all VMs.
+    """
+    for dom in ctx.obj.listAllDomains():
+        if not matches(dom.name(), patterns):
+            continue
+        try:
+            snapshots = [snap for snap in dom.listAllSnapshots() if snap.getName() == name]
+            if len(snapshots) == 1:
+                print("Reverting to snapshot for " + dom.name())
+                dom.revertToSnapshot(name)
+            else:
+                print("No snapshot to revert to for " + dom.name())
+        except libvirt.libvirtError as err:
+            print("Failed to revert to snapshot {} on {}: {}".format(name, dom.name(), err))
+
+
 def matches(name, patterns):
     """
     Return whether the name matches at least a pattern or if no pattern is set
