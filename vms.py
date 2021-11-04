@@ -24,6 +24,17 @@ STATES = {
 }
 
 
+def complete_domain_pattern(ctx, param, incomplete):
+    """
+    Provide completion for VM names
+    """
+    domains = []
+    connect = ctx.find_root().params["connect"]
+    with connect_libvirt(connect) as cnx:
+        domains = [dom.name() for dom in cnx.listAllDomains() if dom.name().startswith(incomplete)]
+    return domains
+
+
 @click.group(invoke_without_command=True)
 @click.pass_context
 def cli(ctx):
@@ -33,7 +44,7 @@ def cli(ctx):
 
 
 @cli.command()
-@click.argument("patterns", nargs=-1)
+@click.argument("patterns", nargs=-1, shell_complete=complete_domain_pattern)
 @click.option(
     "--format", "format", type=click.Choice(["json", "table"]), default="table"
 )
@@ -62,7 +73,7 @@ def list(ctx, format, patterns):
 
 
 @cli.command()
-@click.argument("patterns", nargs=-1)
+@click.argument("patterns", nargs=-1, shell_complete=complete_domain_pattern)
 @click.pass_context
 def start(ctx, patterns):
     """
@@ -85,7 +96,7 @@ def start(ctx, patterns):
 
 
 @cli.command(help="")
-@click.argument("patterns", nargs=-1)
+@click.argument("patterns", nargs=-1, shell_complete=complete_domain_pattern)
 @click.pass_context
 def stop(ctx, patterns):
     """
@@ -108,7 +119,7 @@ def stop(ctx, patterns):
 
 
 @cli.command()
-@click.argument("patterns", nargs=-1)
+@click.argument("patterns", nargs=-1, shell_complete=complete_domain_pattern)
 @click.pass_context
 def delete(ctx, patterns):
     """
@@ -215,7 +226,7 @@ def snapshot(ctx):
 
 
 @snapshot.command(name="list")
-@click.argument("patterns", nargs=-1)
+@click.argument("patterns", nargs=-1, shell_complete=complete_domain_pattern)
 @click.option(
     "--format", "format", type=click.Choice(["json", "table"]), default="table"
 )
@@ -272,7 +283,7 @@ def snapshot_list(ctx, format, patterns):
 
 @snapshot.command(name="create")
 @click.argument("name", nargs=1)
-@click.argument("patterns", nargs=-1)
+@click.argument("patterns", nargs=-1, shell_complete=complete_domain_pattern)
 @click.pass_context
 def snapshot_create(ctx, name, patterns):
     """
@@ -296,7 +307,7 @@ def snapshot_create(ctx, name, patterns):
 
 @snapshot.command(name="delete")
 @click.argument("name", nargs=1)
-@click.argument("patterns", nargs=-1)
+@click.argument("patterns", nargs=-1, shell_complete=complete_domain_pattern)
 @click.pass_context
 def snapshot_delete(ctx, name, patterns):
     """
