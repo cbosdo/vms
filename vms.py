@@ -36,9 +36,10 @@ def complete_domain_pattern(ctx, param, incomplete):
 
 
 @click.group(invoke_without_command=True)
+@click.option("-c", "--connect", help="libvirt URL to connect to", default=None)
 @click.pass_context
-def cli(ctx):
-    ctx.obj = ctx.with_resource(connect_libvirt())
+def cli(ctx, connect):
+    ctx.obj = ctx.with_resource(connect_libvirt(connect))
     if ctx.invoked_subcommand is None:
         ctx.invoke(list)
 
@@ -339,11 +340,11 @@ def matches(name, patterns):
 
 
 @contextmanager
-def connect_libvirt():
+def connect_libvirt(connect):
     """
     Connect to libvirt daemon
     """
-    cnx = libvirt.open()
+    cnx = libvirt.open(connect)
     try:
         yield cnx
     finally:
