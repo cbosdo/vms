@@ -351,7 +351,7 @@ def snapshot_revert(ctx, name, patterns):
             snapshots = [snap for snap in dom.listAllSnapshots() if snap.getName() == name]
             if len(snapshots) == 1:
                 print("Reverting to snapshot for " + dom.name())
-                dom.revertToSnapshot(name)
+                dom.revertToSnapshot(snapshots[0])
             else:
                 print("No snapshot to revert to for " + dom.name())
         except libvirt.libvirtError as err:
