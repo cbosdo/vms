@@ -7,7 +7,7 @@ setup(
     install_requires=[
         "Click",
         "libvirt-python",
-        "tabulate",
+        "rich",
     ],
     entry_points={
         "console_scripts": [
