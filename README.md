@@ -1,5 +1,7 @@
 Convenient tool to manage multiple VMs at once using libvirt
 
+![vms usage](./vms.gif)
+
 # Installing
 
 To install the tool and its dependencies:
