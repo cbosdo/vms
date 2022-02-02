@@ -108,9 +108,10 @@ def start(ctx, patterns):
 
 
 @cli.command(help="")
+@click.option("-f", "--force", help="Power off instead of gentle shut down", is_flag=True)
 @click.argument("patterns", nargs=-1, shell_complete=complete_domain_pattern)
 @click.pass_context
-def stop(ctx, patterns):
+def stop(ctx, force, patterns):
     """
     stop all vms matching a pattern
 
@@ -123,8 +124,12 @@ def stop(ctx, patterns):
                 dom.name(), patterns
             ):
                 try:
-                    dom.shutdown()
-                    console.print("Triggered shutdown of " + dom.name())
+                    if force:
+                        dom.destroy()
+                        console.print("Powered off " + dom.name())
+                    else:
+                        dom.shutdown()
+                        console.print("Triggered shutdown of " + dom.name())
                 except libvirt.libvirtError as err:
                     console.print(
                         "Failed to shut down {}: {}".format(dom.name(), err),
