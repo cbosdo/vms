@@ -302,6 +302,8 @@ def snapshot_list(ctx, format, patterns):
         ]:
             table.add_column(header)
         for snapshot in snapshots:
+            row = snapshot
+            row[2] = "\u2714" if row[2] else ""
             table.add_row(*snapshot)
         console.print(table)
 
