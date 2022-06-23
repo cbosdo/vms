@@ -304,7 +304,7 @@ def snapshot_list(ctx, format, patterns):
         for snapshot in snapshots:
             row = snapshot
             row[2] = "\u2714" if row[2] else ""
-            table.add_row(*snapshot)
+            table.add_row(*snapshot, style="bold green" if row[2] else None)
         console.print(table)
 
 
