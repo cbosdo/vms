@@ -363,7 +363,7 @@ def snapshot_delete(ctx, name, patterns):
                     console.print("Deleted snapshot for " + dom.name())
                 else:
                     console.print(
-                        "No snapshot to delete for " + dom.name(), style="orange"
+                        "No snapshot to delete for " + dom.name(), style="dark_orange"
                     )
             except libvirt.libvirtError as err:
                 console.print(
