@@ -7,6 +7,7 @@ import json
 import libvirt
 import re
 import sys
+import time
 from rich.console import Console
 from rich.table import Table
 from rich.text import Text
@@ -63,22 +64,22 @@ def list(ctx, format, patterns):
     PATTERNS: the list of patterns matching the VM name. If none is set matches all VMs.
     """
     domains = [
-        [dom.name(), STATES[dom.state()[0]]]
+        [dom.name(), STATES[dom.state()[0]], datetime.fromtimestamp(dom.getTime()["seconds"]) if dom.state()[0] == libvirt.VIR_DOMAIN_RUNNING else None]
         for dom in ctx.obj.listAllDomains()
         if matches(dom.name(), patterns)
     ]
     console = Console()
     if format == "json":
-        domains = [[domain[0], domain[1]["label"]] for domain in domains]
+        domains = [[domain[0], domain[1]["label"], domain[2].isoformat() if domain[2] else None] for domain in domains]
         console.print(json.dumps(domains))
     else:
         table = Table(show_header=True)
         table.add_column("Name")
         table.add_column("State")
-        for name, state in sorted(domains, key=lambda d: d[0]):
+        for name, state, dom_time in sorted(domains, key=lambda d: d[0]):
             formatted_state = Text()
             formatted_state.append(state["label"], style=state.get("style"))
-            table.add_row(name, formatted_state)
+            table.add_row(name, formatted_state, dom_time.isoformat(sep=" ") if dom_time else "")
         console.print(table)
 
 
@@ -241,6 +242,29 @@ def delete(ctx, patterns):
                         ),
                         style="bold red",
                     )
+
+
+@cli.command()
+@click.argument("patterns", nargs=-1, shell_complete=complete_domain_pattern)
+@click.pass_context
+def synctime(ctx, patterns):
+    """
+    Set the host time on all vms matching a pattern
+
+    PATTERNS: the list of patterns matching the VM name. If none is set matches all VMs.
+    """
+    domains = [dom for dom in ctx.obj.listAllDomains() if matches(dom.name(), patterns) and dom.state()[0] == libvirt.VIR_DOMAIN_RUNNING]
+    console = Console()
+    with console.status("[bold green]Synchronizing time on domains..."):
+        for dom in domains:
+            if getattr(time, "time_ns"):
+                now_ns = time.time_ns()
+                now = {"seconds": int(now_ns / 10 ** 9), "nseconds": now_ns % 10 ** 9}
+            else:
+                now_ts = time.time()
+                now = {"seconds": int(now_ts), "nseconds": int((now_ts % 1) * 10 ** 9)}
+            console.print("{} time set to {}.{}".format(dom.name(), datetime.fromtimestamp(now["seconds"]), now["nseconds"]))
+            dom.setTime(now)
 
 
 @cli.group(help="Snapshots management", invoke_without_command=True)
