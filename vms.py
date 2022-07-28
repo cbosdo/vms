@@ -345,7 +345,7 @@ def snapshot_delete(ctx, name, patterns):
     """
     delete a snapshot on all vms matching a pattern
 
-    NAME: the name of the snapshot to delete
+    NAME: the pattern matching the name of the snapshots to delete
 
     PATTERNS: the list of patterns matching the VM name. If none is set matches all VMs.
     """
@@ -356,15 +356,16 @@ def snapshot_delete(ctx, name, patterns):
                 continue
             try:
                 snapshots = [
-                    snap for snap in dom.listAllSnapshots() if snap.getName() == name
+                    snap for snap in dom.listAllSnapshots() if matches(snap.getName(), [name])
                 ]
-                if len(snapshots) == 1:
-                    snapshots[0].delete()
-                    console.print("Deleted snapshot for " + dom.name())
-                else:
+                if not snapshots:
                     console.print(
                         "No snapshot to delete for " + dom.name(), style="dark_orange"
                     )
+                else:
+                    for snapshot in snapshots:
+                        snapshot.delete()
+                        console.print("Deleted snapshot {} on {}".format(snapshot.getName(), dom.name()))
             except libvirt.libvirtError as err:
                 console.print(
                     "Failed to delete snapshot on {}: {}".format(dom.name(), err),
