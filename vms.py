@@ -76,6 +76,7 @@ def list(ctx, format, patterns):
         table = Table(show_header=True)
         table.add_column("Name")
         table.add_column("State")
+        table.add_column("Time")
         for name, state, dom_time in sorted(domains, key=lambda d: d[0]):
             formatted_state = Text()
             formatted_state.append(state["label"], style=state.get("style"))
