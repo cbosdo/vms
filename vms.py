@@ -63,8 +63,20 @@ def list(ctx, format, patterns):
 
     PATTERNS: the list of patterns matching the VM name. If none is set matches all VMs.
     """
+    def getTime(domain):
+        """
+        Safely get the time of the domain
+        """
+        if domain.state()[0] == libvirt.VIR_DOMAIN_RUNNING:
+            try:
+                return datetime.fromtimestamp(domain.getTime()["seconds"])
+            except libvirt.libvirtError:
+                # The vm is likely to have no guest agent
+                return None
+        return None
+
     domains = [
-        [dom.name(), STATES[dom.state()[0]], datetime.fromtimestamp(dom.getTime()["seconds"]) if dom.state()[0] == libvirt.VIR_DOMAIN_RUNNING else None]
+        [dom.name(), STATES[dom.state()[0]], getTime(dom)]
         for dom in ctx.obj.listAllDomains()
         if matches(dom.name(), patterns)
     ]
