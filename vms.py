@@ -257,16 +257,11 @@ def delete(ctx, patterns):
                     )
 
 
-@cli.command()
-@click.argument("patterns", nargs=-1, shell_complete=complete_domain_pattern)
-@click.pass_context
-def synctime(ctx, patterns):
+def do_synctime(cnx, patterns):
     """
-    Set the host time on all vms matching a pattern
-
-    PATTERNS: the list of patterns matching the VM name. If none is set matches all VMs.
+    Shared code actually synchronizing time in VMs
     """
-    domains = [dom for dom in ctx.obj.listAllDomains() if matches(dom.name(), patterns) and dom.state()[0] == libvirt.VIR_DOMAIN_RUNNING]
+    domains = [dom for dom in cnx.listAllDomains() if matches(dom.name(), patterns) and dom.state()[0] == libvirt.VIR_DOMAIN_RUNNING]
     console = Console()
     with console.status("[bold green]Synchronizing time on domains..."):
         for dom in domains:
@@ -278,6 +273,18 @@ def synctime(ctx, patterns):
                 now = {"seconds": int(now_ts), "nseconds": int((now_ts % 1) * 10 ** 9)}
             console.print("{} time set to {}.{}".format(dom.name(), datetime.fromtimestamp(now["seconds"]), now["nseconds"]))
             dom.setTime(now)
+
+
+@cli.command()
+@click.argument("patterns", nargs=-1, shell_complete=complete_domain_pattern)
+@click.pass_context
+def synctime(ctx, patterns):
+    """
+    Set the host time on all vms matching a pattern
+
+    PATTERNS: the list of patterns matching the VM name. If none is set matches all VMs.
+    """
+    do_synctime(ctx.obj, patterns)
 
 
 @cli.group(help="Snapshots management", invoke_without_command=True)
@@ -445,6 +452,8 @@ def snapshot_revert(ctx, name, patterns):
                     ),
                     style="bold red",
                 )
+
+    do_synctime(ctx.obj, patterns)
 
 
 def matches(name, patterns):
