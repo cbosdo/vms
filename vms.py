@@ -272,7 +272,10 @@ def do_synctime(cnx, patterns):
                 now_ts = time.time()
                 now = {"seconds": int(now_ts), "nseconds": int((now_ts % 1) * 10 ** 9)}
             console.print("{} time set to {}.{}".format(dom.name(), datetime.fromtimestamp(now["seconds"]), now["nseconds"]))
-            dom.setTime(now)
+            try:
+                dom.setTime(now)
+            except libvirt.libvirtError as err:
+                console.print(f"[bold red]Failed to set time {datetime.fromtimestamp(now['seconds'])} on domain {dom.name()}")
 
 
 @cli.command()
