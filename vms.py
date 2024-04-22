@@ -6,7 +6,6 @@ import click
 import json
 import libvirt
 import re
-import sys
 import time
 from rich.console import Console
 from rich.table import Table
@@ -48,16 +47,16 @@ def complete_domain_pattern(ctx, param, incomplete):
 def cli(ctx, connect):
     ctx.obj = ctx.with_resource(connect_libvirt(connect))
     if ctx.invoked_subcommand is None:
-        ctx.invoke(list)
+        ctx.invoke(vms_list)
 
 
-@cli.command()
+@cli.command(name="list")
 @click.argument("patterns", nargs=-1, shell_complete=complete_domain_pattern)
 @click.option(
     "--format", "format", type=click.Choice(["json", "table"]), default="table"
 )
 @click.pass_context
-def list(ctx, format, patterns):
+def vms_list(ctx, format, patterns):
     """
     list the virtual machines (default command)
 
@@ -290,6 +289,68 @@ def synctime(ctx, patterns):
     do_synctime(ctx.obj, patterns)
 
 
+@cli.command()
+@click.argument("patterns", nargs=-1, shell_complete=complete_domain_pattern)
+@click.option(
+    "--format", "format", type=click.Choice(["json", "table"]), default="table"
+)
+@click.pass_context
+def addresses(ctx, format, patterns):
+    """
+    Get the IP addresses of all the vms matching a pattern
+
+    PATTERNS: the list of patterns matching the VM name. If none is set matches all VMs.
+    """
+    cnx = ctx.obj
+    domains = [dom for dom in cnx.listAllDomains() if matches(dom.name(), patterns) and dom.state()[0] == libvirt.VIR_DOMAIN_RUNNING]
+    def convert_data(data):
+        return {value["hwaddr"]: {"names": [name], "addrs": [addr["addr"] for addr in value["addrs"]]} for name, value in data.items() if name != "lo"}
+
+    all_addresses = {}
+    for dom in domains:
+        leases = dom.interfaceAddresses(source=libvirt.VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE)
+        agent = dom.interfaceAddresses(source=libvirt.VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT)
+        arp = dom.interfaceAddresses(source=libvirt.VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_ARP)
+
+        # Merge the 3 data. The returned dict looks like this
+        #{'vnet1': {'addrs': [{'addr': '192.168.122.110', 'prefix': 24, 'type': 0}],
+        #  'hwaddr': '2a:c3:a7:a6:01:00'}}
+        data = merge_dicts(convert_data(leases), convert_data(agent))
+        data = merge_dicts(data, convert_data(arp))
+
+        all_addresses[dom.name()] = data
+
+    console = Console()
+    if format == "json":
+        console.print(json.dumps(all_addresses))
+    else:
+        table = Table(show_header=True)
+        for header in ["Domain", "MAC", "Interface", "IPv4", "IPv6"]:
+            table.add_column(header)
+
+        for domain, ifaces in all_addresses.items():
+            for mac, iface in ifaces.items():
+                names = iface["names"]
+                names.sort(key=iface_name_key)
+                ipv4 = [addr for addr in iface["addrs"] if "." in addr]
+                ipv6 = [addr for addr in iface["addrs"] if ":" in addr]
+                row = [domain,
+                       mac,
+                       ", ".join(names),
+                       ", ".join(ipv4),
+                       ", ".join(ipv6)]
+                table.add_row(*row)
+        console.print(table)
+
+def iface_name_key(name):
+    prefix_order = ["eth", "vnet"]
+    prefix = name.rstrip('0123456789')
+    try:
+        return prefix_order.index(prefix)
+    except ValueError:
+        return len(prefix_order)
+
+
 @cli.group(help="Snapshots management", invoke_without_command=True)
 @click.pass_context
 def snapshot(ctx):
@@ -464,6 +525,21 @@ def matches(name, patterns):
     Return whether the name matches at least a pattern or if no pattern is set
     """
     return any([re.search(p, name) for p in patterns]) or not patterns
+
+
+def merge_dicts(dict1, dict2):
+    """
+    Merge two dictionaries. Concatenates included lists and dictionaries.
+    """
+    merged = dict1
+    for key, value in dict2.items():
+        if key in merged and isinstance(value, list) and isinstance(merged[key], list):
+            merged[key] = list(set(merged[key] + value))
+        elif key in merged and isinstance(value, dict) and isinstance(merged[key], dict):
+            merged[key] = merge_dicts(merged[key], value)
+        else:
+            merged[key] = value
+    return merged
 
 
 @contextmanager
