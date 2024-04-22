@@ -268,7 +268,7 @@ def do_synctime(cnx, patterns):
     console = Console()
     with console.status("[bold green]Synchronizing time on domains..."):
         for dom in domains:
-            if getattr(time, "time_ns"):
+            if hasattr(time, "time_ns"):
                 now_ns = time.time_ns()
                 now = {"seconds": int(now_ns / 10 ** 9), "nseconds": now_ns % 10 ** 9}
             else:
