@@ -1,5 +1,9 @@
 #!/usr/bin/python3
 
+# SPDX-FileCopyrightText: 2024 SUSE LLC
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
 from contextlib import contextmanager
 from datetime import datetime
 import click

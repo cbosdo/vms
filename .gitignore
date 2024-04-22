@@ -1,2 +1,6 @@
+# SPDX-FileCopyrightText: 2024 SUSE LLC
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
 __pycache__
 vms.egg-info

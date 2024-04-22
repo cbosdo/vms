@@ -1,3 +1,11 @@
+<!--
+SPDX-FileCopyrightText: 2024 SUSE LLC
+
+SPDX-License-Identifier: LGPL-2.1-or-later
+-->
+
+[![REUSE status](https://api.reuse.software/badge/git.fsfe.org/reuse/api)](https://api.reuse.software/info/git.fsfe.org/reuse/api)
+
 Convenient tool to manage multiple VMs at once using libvirt
 
 ![vms usage](./vms.gif)

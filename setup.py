@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2024 SUSE LLC
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
 from setuptools import setup
 
 setup(

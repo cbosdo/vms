@@ -1,0 +1,15 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: vms
+Upstream-Contact: Cédric Bosdonnat <cbosdonnat@suse.com>
+Source: https://github.com/cbosdo/vms
+
+# Sample paragraph, commented out:
+#
+# Files: src/*
+# Copyright: $YEAR $NAME <$CONTACT>
+# License: ...
+
+Files: *.gif
+Copyright: 2024 SUSE LLC
+License: CC0-1.0
+
